@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name    String?   
+  firstname    String?   
+  lastname     String?
+  username     String?   @unique
+  birthday     String?
+  image        String?
+  isSubscribed Boolean  @default(false)
+  customerId   String?  @unique // Stripe customer id
+  isCreater    Boolean  @default(false)
+  isVerified   Boolean? @default(false)
+  isVerifySubmitted Boolean? @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  credits      Int @default(0)
+  subscription Subscription?
+  orders       Order[]
+  comments     Comment[]
+  likes        Like[]
+  notifications Notifications[]
+  isBlocked Boolean @default(false)
+  financeVerificationFileLink String?
+  idVerificationFileLink String?
+  selfieLink String?
+
+  
+  messages Message[] @relation("Sender")
+  receivedMessages Message[] @relation("Receiver")
+
+
+
+  PurchaseFrom Purchases[] @relation("Seller")
+  purchases Purchases[] @relation("Buyer")
+
+
+  referralId String  @unique
+  referredBy String?
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  senderId  String
+  receiverId String
+  createdAt DateTime @default(now())
+
+  sender   User @relation("Sender", fields: [senderId], references: [id])
+  receiver User @relation("Receiver", fields: [receiverId], references: [id])
+}
+
+model AdminMessage {
+  id        Int      @id @default(autoincrement())
+  m_title   String
+  m_content   String
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id         String    @id @default(cuid())
+  mediaUrl   String?
+  mediaType  String?
+  text       String
+  userId     String
+  likes      Int       @default(0)
+  isPublic   Boolean   @default(false)
+  isSheduled String?
+  hashtags   String?
+  collaboratetags String?
+  price      Int?
+  comments   Comment[]
+  likesList  Like[]
+  isChecked  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id     String @id @default(cuid())
+  text   String
+  userId String
+  postId String
+
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model Like {
+  id     String @id @default(cuid())
+  userId String
+  postId String
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  planId    String
+  price     Int      @default(0)
+  startDate DateTime @default(now())
+  endDate   DateTime
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Product {
+  id         String  @id @default(cuid())
+  name       String
+  image      String
+  price      Int
+  isArchived Boolean @default(false)
+
+  orders Order[]
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  userId            String
+  productId         String
+  price             Int
+  isPaid            Boolean  @default(false)
+  size              String
+  orderDate         DateTime @default(now())
+  shippingAddressId String?
+
+  user            User             @relation(fields: [userId], references: [id])
+  product         Product          @relation(fields: [productId], references: [id])
+  shippingAddress ShippingAddress? @relation(fields: [shippingAddressId], references: [id])
+
+  @@index([userId])
+  @@index([productId])
+}
+
+model ShippingAddress {
+  id         String  @id @default(cuid())
+  address    String
+  city       String
+  state      String?
+  postalCode String
+  country    String
+
+  order Order[]
+}
+
+model Notifications {
+  id          String @id @default(cuid())
+  userId      String
+  user        User   @relation(fields: [userId], references: [id])
+  title       String
+  description String
+
+  @@index([userId])
+}
+
+model Purchases {
+    id          String @id @default(cuid())
+    purchaseType String
+    sellerId  String
+    buyerId String
+    createdAt DateTime @default(now())
+    seller   User @relation("Seller", fields: [sellerId], references: [id])
+    buyer User @relation("Buyer", fields: [buyerId], references: [id])
+}
+
+model Admin {
+    id   Int @id  @default(autoincrement())
+    name String
+    email String
+    createdAt DateTime @default(now())
+}
+model BannedWord {
+    id   Int @id  @default(autoincrement())
+    word String
+    banned_state Boolean
+    createdAt DateTime @default(now())
+}
+
+model BannedList {
+    id   Int @id  @default(autoincrement())
+    ban_active Boolean @default(false)
+}
+
+model BannedBehavior {
+    id   Int @id  @default(autoincrement())
+    senderId String
+    receiverId String
+    bannedword String
+    send_content String
+    send_time DateTime @default(now())
+}
+ 
+model BannedActive {
+    id   Int @id  @default(autoincrement())
+    ban_active Boolean @default(false)
+ 
+}
+
+model CreditHistory {
+  id String @id @default(cuid())
+  userId String
+  amount Float 
+  type String
+  fromUserId String
+  toUserId String
+  createdAt DateTime @default(now())
+}
+
+model FinanceHistory {
+  id String @id @default(cuid())
+  userId String
+  amount Float 
+  type String
+  createdAt DateTime @default(now())
+}
+
+model SubscriptionHistory {
+  id String @id @default(cuid())
+  userId String
+  postId String
+  createdAt DateTime @default(now())
+}
+
+model Follower {
+  id String @id @default(cuid())
+  userId String
+  followerId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, followerId])
+}
